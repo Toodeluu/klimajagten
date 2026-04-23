@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="da">
 <head>
@@ -172,7 +173,11 @@ var SB_KEY='sb_publishable_-1C2T-cJjwqmCciqRi5X_Q_8Q5AMXRT';
 var SB_REST=SB_URL+'/rest/v1/scores';
 
 function sbHeaders(){
-  return{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY};
+  return{
+    'Content-Type':'application/json',
+    'apikey':SB_KEY,
+    'Authorization':'Bearer '+SB_KEY
+  };
 }
 
 function loadScores(cb){
@@ -189,14 +194,19 @@ function loadScores(cb){
 function insertScore(name,score,cb){
   try{
     var done=false;
-    var t=setTimeout(function(){if(!done){done=true;cb(false);}},5000);
+    var t=setTimeout(function(){if(!done){done=true;console.log('insertScore TIMEOUT');cb(false);}},5000);
     fetch(SB_REST,{
       method:'POST',
       headers:Object.assign({},sbHeaders(),{'Prefer':'return=minimal'}),
       body:JSON.stringify({name:name,score:score})
-    }).then(function(){if(!done){done=true;clearTimeout(t);cb(true);}})
-      .catch(function(){if(!done){done=true;clearTimeout(t);cb(false);}});
-  }catch(e){cb(false);}
+    }).then(function(r){
+      console.log('insertScore status:',r.status,r.statusText);
+      if(!done){done=true;clearTimeout(t);cb(r.ok);}
+    }).catch(function(e){
+      console.log('insertScore error:',e);
+      if(!done){done=true;clearTimeout(t);cb(false);}
+    });
+  }catch(e){console.log('insertScore exception:',e);cb(false);}
 }
 
 function isNewHiscore(sc,scores){
@@ -250,9 +260,15 @@ function maybeShowHiscore(sc){
 
 hsSave.onclick=function(){
   var name=(hsInput.value||'Anonym').trim()||'Anonym';
-  hsPop.classList.remove('show'); // luk popup med det samme
+  hsSaving.style.display='block';
+  hsSaving.textContent='Gemmer…';
   insertScore(name,pendingScore,function(ok){
-    if(ok)setTimeout(function(){loadScores(renderScoreboard);},500);
+    hsSaving.textContent=ok?'✓ Gemt!':'✗ Fejl — prøv igen';
+    setTimeout(function(){
+      hsPop.classList.remove('show');
+      hsSaving.style.display='none';
+      if(ok)setTimeout(function(){loadScores(renderScoreboard);},500);
+    },1500);
   });
 };
 hsSkip.onclick=function(){hsPop.classList.remove('show');};
