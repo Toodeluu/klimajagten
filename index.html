@@ -188,11 +188,14 @@ function loadScores(cb){
 
 function insertScore(name,score,cb){
   try{
+    var done=false;
+    var t=setTimeout(function(){if(!done){done=true;cb(false);}},5000);
     fetch(SB_REST,{
       method:'POST',
       headers:Object.assign({},sbHeaders(),{'Prefer':'return=minimal'}),
       body:JSON.stringify({name:name,score:score})
-    }).then(function(){cb(true);}).catch(function(){cb(false);});
+    }).then(function(){if(!done){done=true;clearTimeout(t);cb(true);}})
+      .catch(function(){if(!done){done=true;clearTimeout(t);cb(false);}});
   }catch(e){cb(false);}
 }
 
@@ -247,11 +250,9 @@ function maybeShowHiscore(sc){
 
 hsSave.onclick=function(){
   var name=(hsInput.value||'Anonym').trim()||'Anonym';
-  hsSave.disabled=true;hsSaving.style.display='block';
+  hsPop.classList.remove('show'); // luk popup med det samme
   insertScore(name,pendingScore,function(ok){
-    hsPop.classList.remove('show');
-    hsSave.disabled=false;hsSaving.style.display='none';
-    if(ok)loadScores(renderScoreboard);
+    if(ok)setTimeout(function(){loadScores(renderScoreboard);},500);
   });
 };
 hsSkip.onclick=function(){hsPop.classList.remove('show');};
