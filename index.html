@@ -176,20 +176,24 @@ function sbHeaders(){
 }
 
 function loadScores(cb){
-  var done=false;
-  var t=setTimeout(function(){if(!done){done=true;cb([]);}},3000);
-  fetch(SB_REST+'?select=name,score&order=score.desc&limit=10',{headers:sbHeaders()})
-    .then(function(r){return r.json();})
-    .then(function(d){if(!done){done=true;clearTimeout(t);cb(Array.isArray(d)?d:[]);}})
-    .catch(function(){if(!done){done=true;clearTimeout(t);cb([]);}});
+  try{
+    var done=false;
+    var t=setTimeout(function(){if(!done){done=true;cb([]);}},4000);
+    fetch(SB_REST+'?select=name,score&order=score.desc&limit=10',{headers:sbHeaders()})
+      .then(function(r){return r.json();})
+      .then(function(d){if(!done){done=true;clearTimeout(t);cb(Array.isArray(d)?d:[]);}})
+      .catch(function(){if(!done){done=true;clearTimeout(t);cb([]);}});
+  }catch(e){cb([]);}
 }
 
 function insertScore(name,score,cb){
-  fetch(SB_REST,{
-    method:'POST',
-    headers:Object.assign({},sbHeaders(),{'Prefer':'return=minimal'}),
-    body:JSON.stringify({name:name,score:score})
-  }).then(function(){cb(true);}).catch(function(){cb(false);});
+  try{
+    fetch(SB_REST,{
+      method:'POST',
+      headers:Object.assign({},sbHeaders(),{'Prefer':'return=minimal'}),
+      body:JSON.stringify({name:name,score:score})
+    }).then(function(){cb(true);}).catch(function(){cb(false);});
+  }catch(e){cb(false);}
 }
 
 function isNewHiscore(sc,scores){
@@ -225,7 +229,10 @@ function renderScoreboard(scores){
 }
 function esc(s){return(s||'').replace(/[&<>"']/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]);});}
 
-setTimeout(function(){loadScores(renderScoreboard);},200);
+// Load scores fully async - never blocks the game
+setTimeout(function(){
+  try{loadScores(renderScoreboard);}catch(e){}
+},3000);
 
 var pendingScore=0;
 function maybeShowHiscore(sc){
